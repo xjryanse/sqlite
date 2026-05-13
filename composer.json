@@ -1,0 +1,20 @@
+{
+    "name": "xjryanse/sqlite",
+    "description": "sqlite数据库操作",
+    "type": "library",
+    "authors": [
+        {
+            "name": "xjryanse",
+            "email": "xjryanse@sina.com"
+        }
+    ],
+	"require": {
+    }, 
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+          "xjryanse\\sqlite\\": "src/"
+        },
+        "files": []
+    }
+}
