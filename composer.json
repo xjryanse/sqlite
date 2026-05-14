@@ -8,7 +8,12 @@
             "email": "xjryanse@sina.com"
         }
     ],
-	"require": {
+    "require": {
+        "php": ">=7.4",
+        "ext-pdo": "*",
+        "ext-pdo_sqlite": "*",
+        "xjryanse/phplite": "^0.1.66",
+        "xjryanse/servicesdk": "^0.2.11"
     }, 
     "license": "MIT",
     "autoload": {
