@@ -8,9 +8,9 @@ use Exception;
 use xjryanse\phplite\logic\ModelQueryCon;
 
 /**
- * 本地 SQLite 替代 DataSdk 的元数据读路径（仅 ORM tableData*）。
+ * tenancy 开启时，用本地 tenancy.db 替代 DataSdk 拉元数据（仅 ORM 读路径 tableData*）。
  */
-final class SqliteCatalogDataSdk
+final class TenancySqliteDataSdk
 {
     /** @var int|string */
     protected $dbId = 0;
@@ -38,17 +38,11 @@ final class SqliteCatalogDataSdk
     /**
      * @param string $tableName
      */
-    private function assertCatalogTable(string $tableName): void
+    private static function assertTableName($tableName): void
     {
         if (!is_string($tableName) || !preg_match('/^w_[a-z0-9_]+$/', $tableName)) {
             throw new Exception('非法表名:' . $tableName);
         }
-    }
-
-    private function prepareCatalogTableRead(string $tableName): void
-    {
-        SqliteCatalog::bootstrapFromConfig();
-        $this->assertCatalogTable($tableName);
     }
 
     /**
@@ -59,8 +53,9 @@ final class SqliteCatalogDataSdk
      */
     public function tableDataGet($tableName, $id, $emptyErr = true): array
     {
-        $this->prepareCatalogTableRead($tableName);
-        $row = SqliteConnection::queryFirst(
+        TenancySqlMeta::bootstrapFromConfig();
+        self::assertTableName($tableName);
+        $row = SqliteTenancy::queryFirst(
             'SELECT * FROM `' . $tableName . '` WHERE `id` = ? LIMIT 1',
             [(string) $id]
         );
@@ -96,7 +91,8 @@ final class SqliteCatalogDataSdk
      */
     public function tableDataConList($tableName, $con = [], $orderBy = '', $fourth = ''): array
     {
-        $this->prepareCatalogTableRead($tableName);
+        TenancySqlMeta::bootstrapFromConfig();
+        self::assertTableName($tableName);
 
         $limit = 0;
         $allowFields = '';
@@ -116,64 +112,6 @@ final class SqliteCatalogDataSdk
             $sql .= ' LIMIT ' . (int) $limit;
         }
 
-        return SqliteConnection::queryAll($sql);
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    public function tableDataInsert($tableName, array $data)
-    {
-        $db = $this->prepareCatalogTableWrite($tableName);
-        if ($data === []) {
-            throw new Exception('插入数据不能为空');
-        }
-        $db->insert($tableName, $data);
-
-        return true;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    public function tableDataUpdate($tableName, array $data)
-    {
-        $db = $this->prepareCatalogTableWrite($tableName);
-        $id = isset($data['id']) ? trim((string) $data['id']) : '';
-        if ($id === '') {
-            throw new Exception('更新需要 id');
-        }
-        unset($data['id']);
-        if ($data === []) {
-            throw new Exception('更新数据不能为空');
-        }
-        $db->update($tableName, $data, ['id' => $id]);
-
-        return true;
-    }
-
-    /**
-     * 物理删除（硬删）
-     *
-     * @param string|int $id
-     */
-    public function tableDataDelete($tableName, $id)
-    {
-        if ($id === null || $id === '' || (is_string($id) && trim($id) === '')) {
-            throw new Exception('删除操作必须传入有效主键 id（table=' . $tableName . '）');
-        }
-        $db = $this->prepareCatalogTableWrite($tableName);
-        $db->delete($tableName, ['id' => (string) $id]);
-
-        return true;
-    }
-
-    /** @return SqliteDb */
-    private function prepareCatalogTableWrite(string $tableName)
-    {
-        SqliteCatalog::bootstrapFromConfig();
-        $this->assertCatalogTable($tableName);
-
-        return SqliteConnection::writableDb();
+        return SqliteTenancy::queryAll($sql);
     }
 }

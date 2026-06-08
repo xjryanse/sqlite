@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace xjryanse\sqlite;
 
 /**
- * 进程内单例：指向一个 SQLite 文件（默认只读），供元数据 / 本地 catalog 等场景共用。
+ * tenancy.db 单例连接与路径（与 {@see TenancySqlMeta} 及业务侧只读查询共用同进程单连接）。
  */
-final class SqliteConnection
+final class SqliteTenancy
 {
-    /** 非 sqlite_% 的用户表清单（sqlite_master） */
-    public const SQL_LIST_USER_TABLE_NAMES = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
-
-    /** 未配置时的默认文件路径（部署环境可覆盖） */
     public const DEFAULT_PATH = '/www/wwwroot/custom_conf/tenancy.db';
 
     /** @var string|null */
@@ -21,14 +17,10 @@ final class SqliteConnection
     /** @var SqliteDb|null */
     private static $db;
 
-    /** @var SqliteDb|null */
-    private static $writableDb;
-
     public static function setPath(?string $path): void
     {
         self::$pathOverride = $path;
         self::$db = null;
-        self::$writableDb = null;
     }
 
     public static function effectivePath(): string
@@ -45,16 +37,6 @@ final class SqliteConnection
         }
 
         return self::$db;
-    }
-
-    /** 可写连接（catalog 增删改） */
-    public static function writableDb(): SqliteDb
-    {
-        if (self::$writableDb === null) {
-            self::$writableDb = SqliteDb::open(self::effectivePath(), ['readonly' => false]);
-        }
-
-        return self::$writableDb;
     }
 
     /**
@@ -77,7 +59,6 @@ final class SqliteConnection
 
     /**
      * @param mixed $default
-     *
      * @return mixed
      */
     public static function queryScalar(string $sql, array $params = [], $default = null)
