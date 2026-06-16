@@ -44,6 +44,14 @@ final class SqliteConnection
     }
 
     /**
+     * Workerman 长进程：关闭并丢弃进程内 PDO，下次查询重建连接（tenancy.db 整文件替换后需调用）。
+     */
+    public static function reconnect(): void
+    {
+        self::$db = null;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public static function queryAll(string $sql, array $params = []): array
