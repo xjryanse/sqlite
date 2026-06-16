@@ -9,7 +9,6 @@
         }
     ],
     "require": {
-        "php": ">=7.4",
         "ext-pdo": "*",
         "ext-pdo_sqlite": "*",
         "xjryanse/phplite": "^0.1.66",
