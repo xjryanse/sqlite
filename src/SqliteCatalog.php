@@ -76,43 +76,8 @@ final class SqliteCatalog
     /**
      * 按解析到的路径设置 {@see SqliteConnection}（在 {@see isEnabled} 为真时调用即可）。
      */
-    /**
-     * 元数据 catalog 必须可用；不可用时抛异常（无 MySQL 兜底）。
-     */
-    public static function requireEnabled(): void
-    {
-        self::bootstrapFromConfig();
-        if (!empty($GLOBALS['_sqlite_catalog_path']) && is_file($GLOBALS['_sqlite_catalog_path'])) {
-            return;
-        }
-        $path = self::resolvedSqlitePath();
-        if ($path !== '' && is_file($path)) {
-            return;
-        }
-        $configured = '';
-        if (function_exists('config')) {
-            foreach (self::CONFIG_PATH_KEYS as $key) {
-                $p = config($key);
-                if (is_string($p) && $p !== '') {
-                    $configured = $p;
-                    break;
-                }
-            }
-        }
-        throw new \Exception(
-            'tenancy SQLite 元数据库不可用，请配置 sqlite_catalog.path 并确保文件存在且可读。'
-            . ($configured !== '' ? ' 已配置:' . $configured : '')
-            . ' 默认路径:' . SqliteConnection::DEFAULT_PATH
-        );
-    }
-
     public static function bootstrapFromConfig(): void
     {
-        // 请求级 catalog（如 abnormal.db）优先，避免后续 commInst 被 tenancy 配置覆盖
-        if (!empty($GLOBALS['_sqlite_catalog_path']) && is_file($GLOBALS['_sqlite_catalog_path'])) {
-            SqliteConnection::setPath($GLOBALS['_sqlite_catalog_path']);
-            return;
-        }
         if (!self::isEnabled()) {
             return;
         }

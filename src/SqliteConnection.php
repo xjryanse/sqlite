@@ -21,14 +21,10 @@ final class SqliteConnection
     /** @var SqliteDb|null */
     private static $db;
 
-    /** @var SqliteDb|null */
-    private static $writableDb;
-
     public static function setPath(?string $path): void
     {
         self::$pathOverride = $path;
         self::$db = null;
-        self::$writableDb = null;
     }
 
     public static function effectivePath(): string
@@ -45,16 +41,6 @@ final class SqliteConnection
         }
 
         return self::$db;
-    }
-
-    /** 可写连接（catalog 增删改） */
-    public static function writableDb(): SqliteDb
-    {
-        if (self::$writableDb === null) {
-            self::$writableDb = SqliteDb::open(self::effectivePath(), ['readonly' => false]);
-        }
-
-        return self::$writableDb;
     }
 
     /**

@@ -7,6 +7,8 @@ namespace xjryanse\sqlite;
 use Exception;
 use xjryanse\phplite\ormcore\CoreBasePDown;
 use xjryanse\phplite\ormcore\OrmCoreBase;
+use xjryanse\servicesdk\data\DataSdk;
+use xjryanse\servicesdk\DbSdk;
 
 /**
  * 元数据 ORM 基类：表名 {@see SqliteTableMap}；本地 catalog 开启时走 {@see SqliteCatalogDataSdk}。
@@ -21,7 +23,7 @@ abstract class DbSysBase extends CoreBasePDown
     }
 
     /**
-     * SQL 元数据 ORM：只读本地 catalog（tenancy.db / 请求级 abnormal.db），不走 dbTenancy。
+     * sqlite_catalog / tenancy_sqlite 开启时：本地 SQLite；否则 dbTenancy + DataSdk。
      */
     public static function commInst($id = 0)
     {
@@ -29,9 +31,14 @@ abstract class DbSysBase extends CoreBasePDown
         if (!$svBindId) {
             throw new Exception(static::class . '未设置$hostBindId');
         }
-        SqliteCatalog::requireEnabled();
+        SqliteCatalog::bootstrapFromConfig();
         $inst = OrmCoreBase::inst($id);
-        $dataSdk = (new SqliteCatalogDataSdk())->dbBind(0);
+        if (SqliteCatalog::isEnabled()) {
+            $dataSdk = (new SqliteCatalogDataSdk())->dbBind(0);
+        } else {
+            $dbId = DbSdk::dbId(static::$dbCate, $svBindId);
+            $dataSdk = DataSdk::inst($svBindId)->dbBind($dbId);
+        }
         $inst->setDataSdk($dataSdk);
         $inst->setTable(static::getTable());
 
