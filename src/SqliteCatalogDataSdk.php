@@ -47,7 +47,6 @@ final class SqliteCatalogDataSdk
 
     private function prepareCatalogTableRead(string $tableName): void
     {
-        SqliteCatalog::bootstrapFromConfig();
         $this->assertCatalogTable($tableName);
     }
 

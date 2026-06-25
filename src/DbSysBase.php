@@ -31,7 +31,6 @@ abstract class DbSysBase extends CoreBasePDown
         if (!$svBindId) {
             throw new Exception(static::class . '未设置$hostBindId');
         }
-        SqliteCatalog::bootstrapFromConfig();
         $inst = OrmCoreBase::inst($id);
         if (SqliteCatalog::isEnabled()) {
             $dataSdk = (new SqliteCatalogDataSdk())->dbBind(0);

@@ -5,35 +5,34 @@ declare(strict_types=1);
 namespace xjryanse\sqlite;
 
 /**
- * 本地 SQLite「元数据 / catalog」：w_sql、w_sql_table 等；与 {@see SqliteConnection} 共用连接。
- *
- * 配置优先读 {@see self::CONFIG_PATH_KEYS} 中第一个存在的 path；enabled 同理。
+ * 本地 SQLite「元数据 / catalog」：与 {@see SqliteConnection} 共用连接。
+ * 不在此处 setPath，路径须由应用层 {@see SqliteConnection::setPath()} 初始化。
  */
 final class SqliteCatalog
 {
     /** @var list<string> */
-    private const CONFIG_PATH_KEYS = ['sqlite_catalog.path', 'tenancy_sqlite.path'];
+    private const CONFIG_PATH_KEYS = ['sqlite_catalog.path'];
 
     /** @var list<string> */
-    private const CONFIG_ENABLED_KEYS = ['sqlite_catalog.enabled', 'tenancy_sqlite.enabled'];
+    private const CONFIG_ENABLED_KEYS = ['sqlite_catalog.enabled'];
 
     /**
-     * 解析实际使用的 SQLite 文件路径（配置 path 优先，否则默认路径，文件须存在）。
+     * 读取配置中的 SQLite 文件路径（不校验、不 setPath）。
      *
-     * @return string 找不到可用文件时返回空字符串
+     * @return string 未配置时返回空字符串
      */
     public static function resolvedSqlitePath(): string
     {
         if (function_exists('config')) {
             foreach (self::CONFIG_PATH_KEYS as $key) {
                 $p = config($key);
-                if (is_string($p) && $p !== '' && is_file($p)) {
+                if (is_string($p) && $p !== '') {
                     return $p;
                 }
             }
         }
 
-        return is_file(SqliteConnection::DEFAULT_PATH) ? SqliteConnection::DEFAULT_PATH : '';
+        return '';
     }
 
     /**
@@ -58,7 +57,7 @@ final class SqliteCatalog
     }
 
     /**
-     * 是否走本机 SQLite 元数据（与 {@see DbSysBase::commInst} 本地读一致）。
+     * 是否走本机 SQLite 元数据（已 setPath 或配置 path 对应文件存在）。
      */
     public static function isEnabled(): bool
     {
@@ -66,25 +65,22 @@ final class SqliteCatalog
         if ($flag === false) {
             return false;
         }
-        if ($flag === true) {
+        if (SqliteConnection::hasPath()) {
+            return true;
+        }
+        $path = self::resolvedSqlitePath();
+        if ($path !== '' && is_file($path)) {
             return true;
         }
 
-        return self::resolvedSqlitePath() !== '';
+        return false;
     }
 
     /**
-     * 按解析到的路径设置 {@see SqliteConnection}（在 {@see isEnabled} 为真时调用即可）。
+     * 兼容旧调用；vendor 不 setPath，由应用层负责。
      */
     public static function bootstrapFromConfig(): void
     {
-        if (!self::isEnabled()) {
-            return;
-        }
-        $path = self::resolvedSqlitePath();
-        if ($path !== '') {
-            SqliteConnection::setPath($path);
-        }
     }
 
     /**

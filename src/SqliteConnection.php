@@ -6,14 +6,12 @@ namespace xjryanse\sqlite;
 
 /**
  * 进程内单例：指向一个 SQLite 文件（默认只读），供元数据 / 本地 catalog 等场景共用。
+ * 路径须由应用层 {@see setPath()} 设置，未设置时查询直接抛异常。
  */
 final class SqliteConnection
 {
     /** 非 sqlite_% 的用户表清单（sqlite_master） */
     public const SQL_LIST_USER_TABLE_NAMES = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
-
-    /** 未配置时的默认文件路径（部署环境可覆盖） */
-    public const DEFAULT_PATH = '/www/wwwroot/custom_conf/tenancy.db';
 
     /** @var string|null */
     private static $pathOverride;
@@ -27,11 +25,18 @@ final class SqliteConnection
         self::$db = null;
     }
 
+    public static function hasPath(): bool
+    {
+        return self::$pathOverride !== null && self::$pathOverride !== '';
+    }
+
     public static function effectivePath(): string
     {
-        return (self::$pathOverride !== null && self::$pathOverride !== '')
-            ? self::$pathOverride
-            : self::DEFAULT_PATH;
+        if (!self::hasPath()) {
+            throw new \Exception('SQLite 路径未初始化，请先调用 SqliteConnection::setPath()');
+        }
+
+        return self::$pathOverride;
     }
 
     public static function db(): SqliteDb
@@ -44,7 +49,7 @@ final class SqliteConnection
     }
 
     /**
-     * Workerman 长进程：关闭并丢弃进程内 PDO，下次查询重建连接（tenancy.db 整文件替换后需调用）。
+     * Workerman 长进程：关闭并丢弃进程内 PDO，下次查询重建连接（整文件替换后需调用）。
      */
     public static function reconnect(): void
     {
